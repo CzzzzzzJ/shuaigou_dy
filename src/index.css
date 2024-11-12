@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 48 100% 98%;
+    --foreground: 35 20% 35%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 35 20% 35%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 35 20% 35%;
+    
+    --primary: 35 80% 82%;
+    --primary-foreground: 35 20% 35%;
+    
+    --secondary: 48 100% 98%;
+    --secondary-foreground: 35 20% 35%;
+    
+    --muted: 35 20% 96%;
+    --muted-foreground: 35 15% 65%;
+    
+    --accent: 48 100% 96%;
+    --accent-foreground: 35 20% 35%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 35 30% 90%;
+    --input: 35 30% 90%;
+    --ring: 35 80% 82%;
+    
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+.bg-grid-pattern {
+  background-image: linear-gradient(to right, #8B735533 1px, transparent 1px),
+    linear-gradient(to bottom, #8B735533 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@keyframes spin-reverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.animate-spin-reverse {
+  animation: spin-reverse 1s linear infinite;
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
