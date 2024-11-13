@@ -12,13 +12,18 @@ export function Header({ className }: HeaderProps) {
   return (
     <header className={cn("flex h-16 items-center border-b px-6", className)}>
       <div 
-        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" 
+        className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" 
         onClick={() => navigate('/')}
       >
-        <div className="h-8 w-8 rounded-lg bg-[#F5D0A9] flex items-center justify-center">
-          <span className="text-[#8B7355] font-bold">AI</span>
+        <img 
+          src="/logo.svg" 
+          alt="帅狗AIGC" 
+          className="h-8 w-8"
+        />
+        <div className="flex flex-col">
+          <span className="text-lg font-semibold text-[#8B7355]">帅狗AIGC</span>
+          <span className="text-xs text-[#B4A89A]">AI驱动的创作助手</span>
         </div>
-        <span className="text-lg font-medium text-[#8B7355]">AI 工具箱</span>
       </div>
     </header>
   )
