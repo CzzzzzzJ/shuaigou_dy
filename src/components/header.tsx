@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils"
+import { Button } from "./ui/button"
 import { useNavigate } from "react-router-dom"
+import { UserButton, SignInButton, useUser } from "@clerk/clerk-react"
 
 interface HeaderProps {
   className?: string
@@ -7,22 +9,39 @@ interface HeaderProps {
 
 export function Header({ className }: HeaderProps) {
   const navigate = useNavigate()
+  const { isSignedIn } = useUser()
 
   return (
-    <header className={cn("flex h-16 items-center border-b px-6", className)}>
+    <header className={cn("flex h-16 items-center justify-between border-b px-6", className)}>
       <div 
-        className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" 
+        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" 
         onClick={() => navigate('/')}
       >
-        <img 
-          src="/logo.svg" 
-          alt="帅狗AIGC" 
-          className="h-8 w-8"
-        />
-        <div className="flex flex-col">
-          <span className="text-lg font-semibold text-[#8B7355]">帅狗AIGC</span>
-          <span className="text-xs text-[#B4A89A]">AI驱动的创作助手</span>
+        <div className="h-8 w-8 rounded-lg bg-[#F5D0A9] flex items-center justify-center">
+          <span className="text-[#8B7355] font-bold">AI</span>
         </div>
+        <span className="text-lg font-medium text-[#8B7355]">帅狗AIGC</span>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {isSignedIn ? (
+          <>
+            <Button 
+              variant="ghost" 
+              className="text-[#8B7355]"
+              onClick={() => navigate('/profile')}
+            >
+              个人中心
+            </Button>
+            <UserButton afterSignOutUrl="/" />
+          </>
+        ) : (
+          <SignInButton mode="modal">
+            <Button className="bg-[#F5D0A9] text-[#8B7355]">
+              登录
+            </Button>
+          </SignInButton>
+        )}
       </div>
     </header>
   )

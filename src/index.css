@@ -34,20 +34,6 @@
     
     --radius: 0.75rem;
   }
-
-  html, body {
-    height: 100%;
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  #root {
-    height: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
 }
 
 @layer base {

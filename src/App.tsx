@@ -1,20 +1,38 @@
-import { Header } from "@/components/header"
-import { DouyinTool } from "./components/tools/douyin-tool"
-import { MainContent } from "./components/main-content"
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route } from "react-router-dom";
+import { SignIn, SignUp, SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+import { Header } from "@/components/header";
+import { MainContent } from "@/components/main-content";
+import { DouyinTool } from "@/components/tools/douyin-tool";
+import { UserProvider } from '@/contexts/user-context';
 
 function App() {
   return (
-    <div className="flex flex-col min-h-screen max-h-screen">
-      <Header />
-      <main className="flex-1 overflow-y-auto relative">
-        <Routes>
-          <Route path="/" element={<MainContent />} />
-          <Route path="/douyin" element={<DouyinTool onBack={() => {}} />} />
-        </Routes>
-      </main>
-    </div>
-  )
+    <UserProvider>
+      <div className="flex flex-col min-h-screen max-h-screen">
+        <Header />
+        <main className="flex-1 overflow-y-auto relative">
+          <Routes>
+            <Route path="/" element={<MainContent />} />
+            <Route path="/sign-in/*" element={<SignIn routing="path" path="/sign-in" />} />
+            <Route path="/sign-up/*" element={<SignUp routing="path" path="/sign-up" />} />
+            <Route
+              path="/douyin"
+              element={
+                <>
+                  <SignedIn>
+                    <DouyinTool onBack={() => {}} />
+                  </SignedIn>
+                  <SignedOut>
+                    <RedirectToSignIn />
+                  </SignedOut>
+                </>
+              }
+            />
+          </Routes>
+        </main>
+      </div>
+    </UserProvider>
+  );
 }
 
-export default App
+export default App;
