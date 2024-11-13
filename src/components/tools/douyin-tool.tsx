@@ -12,8 +12,6 @@ import { Card } from '@/components/ui/card';
 import { useState } from 'react';
 import { extractDouyinContent } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
 
 interface DouyinToolProps {
   onBack: () => void;
