@@ -3,7 +3,8 @@ import { SignIn, SignUp, SignedIn, SignedOut, RedirectToSignIn } from "@clerk/cl
 import { Header } from "@/components/header";
 import { MainContent } from "@/components/main-content";
 import { DouyinTool } from "@/components/tools/douyin-tool";
-import { UserProvider } from '@/contexts/user-context';
+import { UserProfile } from "@/components/user-profile";
+import { UserProvider } from "@/contexts/user-context";
 
 function App() {
   return (
@@ -21,6 +22,19 @@ function App() {
                 <>
                   <SignedIn>
                     <DouyinTool onBack={() => {}} />
+                  </SignedIn>
+                  <SignedOut>
+                    <RedirectToSignIn />
+                  </SignedOut>
+                </>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <>
+                  <SignedIn>
+                    <UserProfile />
                   </SignedIn>
                   <SignedOut>
                     <RedirectToSignIn />

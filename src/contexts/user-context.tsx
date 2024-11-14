@@ -24,22 +24,24 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     try {
       console.log('Refreshing user data for:', user.id);
-      // 使用 db.ts 中的函数获取用户数据
+      // 先尝试获取现有用户数据
       let userData = await getUserByClerkId(user.id);
       
-      // 如果用户不存在，创建新用户
+      // 只有在用户完全不存在时才创建新用户
       if (!userData && user.emailAddresses[0]?.emailAddress) {
-        console.log('Creating new user...');
+        console.log('User not found, creating new user...');
         userData = await createUser(
           user.id,
           user.emailAddresses[0].emailAddress,
           user.fullName || 'User',
           user.imageUrl
         );
+      } else {
+        console.log('Existing user found:', userData);
       }
 
       if (userData) {
-        console.log('User data updated:', userData);
+        console.log('Setting user data:', userData);
         setDbUser(userData);
       }
     } catch (error) {
@@ -57,7 +59,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       setDbUser(null);
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user?.id]); // 只在用户 ID 变化时触发，而不是整个 user 对象
 
   return (
     <UserContext.Provider value={{ dbUser, isLoading, refreshUser }}>

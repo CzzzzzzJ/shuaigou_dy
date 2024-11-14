@@ -199,4 +199,51 @@ export async function usePoints(clerkId: string, amount: number): Promise<boolea
   }
 }
 
+// 检查今日是否已签到
+export async function checkTodaySignIn(clerkId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('last_sign_in_date')
+      .eq('clerk_id', clerkId)
+      .single();
+
+    if (error) throw error;
+
+    if (!data.last_sign_in_date) return false;
+
+    const lastSignIn = new Date(data.last_sign_in_date);
+    const today = new Date();
+    
+    return lastSignIn.toDateString() === today.toDateString();
+  } catch (error) {
+    console.error('Error checking sign in status:', error);
+    return false;
+  }
+}
+
+// 执行签到
+export async function performSignIn(clerkId: string): Promise<boolean> {
+  try {
+    const hasSignedIn = await checkTodaySignIn(clerkId);
+    if (hasSignedIn) {
+      return false;
+    }
+
+    const { error } = await supabase.rpc('sign_in_reward', {
+      user_clerk_id: clerkId
+    });
+
+    if (error) throw error;
+
+    // 清除缓存
+    POINTS_CACHE.delete(clerkId);
+    
+    return true;
+  } catch (error) {
+    console.error('Error performing sign in:', error);
+    return false;
+  }
+}
+
 // 其他数据库操作函数... 
