@@ -45,32 +45,50 @@ export async function createUser(
   try {
     console.log('Creating/updating user with name:', name);
 
+    // 先获取现有用户数据
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('clerk_id', clerkId)
+      .single();
+
+    // 如果用户已存在，只更新基本信息，不修改积分等数据
+    if (existingUser) {
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          email,
+          name,
+          avatar_url: avatarUrl,
+          // 不更新积分、last_sign_in_date 等字段
+        })
+        .eq('clerk_id', clerkId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+
+    // 只有新用户才设置初始积分
     const { data, error } = await supabase
       .from('users')
-      .upsert(
+      .insert([
         {
           clerk_id: clerkId,
           email,
-          name: name || '未命名用户',
+          name,
           avatar_url: avatarUrl,
           membership_type: 'free',
           daily_extractions: 0,
-          points: 100,
+          points: 100, // 只有新用户才设置初始积分
           points_reset_date: new Date().toISOString()
-        },
-        { 
-          onConflict: 'clerk_id',
-          ignoreDuplicates: false
         }
-      )
+      ])
       .select('*')
       .single();
 
-    if (error) {
-      console.error('Error creating/updating user:', error);
-      throw error;
-    }
-
+    if (error) throw error;
     console.log('User created/updated successfully:', data);
     return data;
   } catch (error) {

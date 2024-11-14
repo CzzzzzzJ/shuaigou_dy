@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
-import { getUserByClerkId, createUser } from '@/lib/db';
+import { createUser, getUserByClerkId } from '@/lib/db';
 import type { DbUser } from '@/types/user';
 
 interface UserContextType {
@@ -19,29 +19,45 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = async () => {
     if (!user) {
       setDbUser(null);
+      setIsLoading(false);
       return;
     }
 
     try {
       console.log('Refreshing user data for:', user.id);
-      // 先尝试获取现有用户数据
+      
+      // 先获取现有用户数据
       let userData = await getUserByClerkId(user.id);
       
-      // 只有在用户完全不存在时才创建新用户
-      if (!userData && user.emailAddresses[0]?.emailAddress) {
-        console.log('User not found, creating new user...');
+      // 检查用户信息是否需要更新
+      if (userData) {
+        const needsUpdate = 
+          userData.name !== user.fullName || 
+          userData.email !== user.primaryEmailAddress?.emailAddress ||
+          userData.avatar_url !== user.imageUrl;
+
+        if (needsUpdate) {
+          console.log('Updating user info...');
+          userData = await createUser(
+            user.id,
+            user.primaryEmailAddress?.emailAddress || '',
+            user.fullName || user.username || userData.name, // 保留原有名称作为后备
+            user.imageUrl
+          );
+        }
+      } else {
+        // 创建新用户
+        console.log('Creating new user...');
         userData = await createUser(
           user.id,
-          user.emailAddresses[0].emailAddress,
-          user.fullName || 'User',
+          user.primaryEmailAddress?.emailAddress || '',
+          user.fullName || user.username || 'User',
           user.imageUrl
         );
-      } else {
-        console.log('Existing user found:', userData);
       }
 
       if (userData) {
-        console.log('Setting user data:', userData);
+        console.log('User data updated:', userData);
         setDbUser(userData);
       }
     } catch (error) {
@@ -51,7 +67,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // 监听用户变化
+  // 监听用户信息变化
   useEffect(() => {
     if (user) {
       refreshUser();
@@ -59,7 +75,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       setDbUser(null);
       setIsLoading(false);
     }
-  }, [user?.id]); // 只在用户 ID 变化时触发，而不是整个 user 对象
+  }, [
+    user?.id,
+    user?.fullName,
+    user?.primaryEmailAddress?.emailAddress,
+    user?.imageUrl
+  ]); // 监听所有可能变化的用户信息
 
   return (
     <UserContext.Provider value={{ dbUser, isLoading, refreshUser }}>
