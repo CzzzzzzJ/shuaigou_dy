@@ -67,3 +67,28 @@ export async function extractDouyinContent(url: string): Promise<ExtractResponse
     throw error;
   }
 }
+
+// 文案仿写接口
+export async function rewriteContent(text: string, userInput: string) {
+  const response = await fetch('https://api.coze.com/v1/workflow/stream_run', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
+      parameters: {
+        user_id: "default_user",
+        text: text,
+        user_input: userInput
+      }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to rewrite content');
+  }
+
+  return response.json();
+}

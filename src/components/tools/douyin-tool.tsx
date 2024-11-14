@@ -10,8 +10,9 @@ import {
 } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
-import { extractDouyinContent } from '@/lib/api';
+import { extractDouyinContent, rewriteContent } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
 
 interface DouyinToolProps {
   onBack: () => void;
@@ -22,6 +23,11 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRewriting, setIsRewriting] = useState(false);
+  const [rewriteInput, setRewriteInput] = useState('');
+  const [rewrittenContent, setRewrittenContent] = useState('');
+  const [useExtractedContent, setUseExtractedContent] = useState(true);
+  const [customContent, setCustomContent] = useState('');
   const { toast } = useToast();
 
   const handleExtract = async () => {
@@ -66,6 +72,44 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
         description: "请手动复制内容",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleRewrite = async () => {
+    const sourceContent = useExtractedContent ? content : customContent;
+    
+    if (!sourceContent) {
+      toast({
+        title: useExtractedContent ? "请先提取文案" : "请输入需要仿写的文案",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!rewriteInput) {
+      toast({
+        title: "请输入仿写要求",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsRewriting(true);
+    try {
+      const result = await rewriteContent(sourceContent, rewriteInput);
+      setRewrittenContent(result.content);
+      toast({
+        title: "仿写成功",
+        description: "新文案已生成",
+      });
+    } catch (error) {
+      toast({
+        title: "仿写失败",
+        description: "请稍后重试",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRewriting(false);
     }
   };
 
@@ -216,14 +260,97 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
           </AccordionTrigger>
           <AccordionContent>
             <Card className="p-6 bg-white/50 backdrop-blur-sm border-[#E8E3D7]">
-              <div className="space-y-4">
-                <Textarea
-                  placeholder="请输入您的仿写需求（例如：保持原文风格，突出产品优势）..."
-                  className="border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
-                />
-                <Button className="w-full bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90">
-                  开始仿写
+              <div className="space-y-6">
+                {/* 文案来源选择 */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Button
+                      variant={useExtractedContent ? "default" : "outline"}
+                      onClick={() => setUseExtractedContent(true)}
+                      className="flex-1 bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90"
+                    >
+                      使用提取的文案
+                    </Button>
+                    <Button
+                      variant={!useExtractedContent ? "default" : "outline"}
+                      onClick={() => setUseExtractedContent(false)}
+                      className="flex-1 bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90"
+                    >
+                      自定义文案
+                    </Button>
+                  </div>
+
+                  {/* 显示选中的文案 */}
+                  {useExtractedContent ? (
+                    <div className="relative">
+                      <Textarea
+                        value={content}
+                        readOnly
+                        placeholder="请先提取文案..."
+                        className="min-h-[120px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
+                      />
+                      {!content && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-md">
+                          <p className="text-[#8B7355]/70">请先在上方提取文案</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Textarea
+                      value={customContent}
+                      onChange={(e) => setCustomContent(e.target.value)}
+                      placeholder="请输入需要仿写的文案..."
+                      className="min-h-[120px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
+                    />
+                  )}
+                </div>
+
+                {/* 仿写要求输入 */}
+                <div className="space-y-2">
+                  <Label className="text-[#8B7355]">仿写要求</Label>
+                  <Textarea
+                    value={rewriteInput}
+                    onChange={(e) => setRewriteInput(e.target.value)}
+                    placeholder="请输入您的仿写需求（例如：改成卖汉服的）..."
+                    className="border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
+                  />
+                </div>
+
+                {/* 生成按钮 */}
+                <Button 
+                  className="w-full bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90"
+                  onClick={handleRewrite}
+                  disabled={isRewriting}
+                >
+                  {isRewriting ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>生成中...</span>
+                    </div>
+                  ) : '开始仿写'}
                 </Button>
+
+                {/* 仿写结果 */}
+                {rewrittenContent && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[#8B7355]">仿写结果</Label>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-[#8B7355]"
+                        onClick={() => copyToClipboard(rewrittenContent)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={rewrittenContent}
+                      readOnly
+                      className="min-h-[200px] border-[#E8E3D7] bg-white/80"
+                    />
+                  </div>
+                )}
               </div>
             </Card>
           </AccordionContent>
