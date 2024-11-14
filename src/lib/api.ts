@@ -70,76 +70,59 @@ export async function extractDouyinContent(url: string): Promise<ExtractResponse
 
 // 文案仿写接口
 export async function rewriteContent(text: string, userInput: string) {
-  console.log('Starting rewrite request...');
+  console.log('Starting rewrite request with:', { text, userInput });
 
   try {
-    // 先尝试直接调用
-    try {
-      console.log('Attempting direct API call...');
-      const directResponse = await fetch('https://api.coze.com/v1/workflow/stream_run', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
-          parameters: {
-            user_id: "default_user",
-            text,
-            user_input: userInput
-          }
-        })
-      });
+    // 构建请求 URL
+    const apiUrl = `${window.location.origin}/api/coze`;
+    console.log('Using API URL:', apiUrl);
 
-      if (!directResponse.ok) {
-        console.log('Direct API call failed:', directResponse.status);
-        throw new Error('Direct API call failed');
+    const requestBody = {
+      workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
+      parameters: {
+        user_id: "default_user",
+        text,
+        user_input: userInput
       }
+    };
 
-      const responseText = await directResponse.text();
-      return handleResponse(responseText);
-    } catch (directError) {
-      console.log('Direct API call failed, trying proxy...', directError);
-      
-      // 如果直接调用失败，使用代理
-      const proxyUrl = `${window.location.origin}/api/coze`;
-      console.log('Using proxy URL:', proxyUrl);
+    console.log('Request body:', requestBody);
+    console.log('Authorization token length:', import.meta.env.VITE_COZE_REWRITE_API_TOKEN.length);
 
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
-          parameters: {
-            user_id: "default_user",
-            text,
-            user_input: userInput
-          }
-        })
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
       });
-
-      if (!proxyResponse.ok) {
-        const errorData = await proxyResponse.json().catch(() => ({}));
-        console.error('Proxy API call failed:', {
-          status: proxyResponse.status,
-          data: errorData
-        });
-        throw new Error(`代理服务器请求失败: ${proxyResponse.status} ${errorData.message || ''}`);
-      }
-
-      const { data } = await proxyResponse.json();
-      return handleResponse(data);
+      throw new Error(`代理服务器请求失败: ${response.status} ${errorText}`);
     }
+
+    const { data } = await response.json();
+    console.log('Response data length:', data.length);
+    console.log('Response data preview:', data.substring(0, 200));
+
+    return handleResponse(data);
   } catch (error: unknown) {
-    console.error('API error:', error);
-    if (error instanceof Error) {
-      throw new Error(error.message || '生成失败，请稍后重试');
-    }
-    throw new Error('生成失败，请稍后重试');
+    console.error('API error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    throw error;
   }
 }
 
