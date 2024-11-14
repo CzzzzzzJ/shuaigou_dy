@@ -72,8 +72,9 @@ export async function extractDouyinContent(url: string): Promise<ExtractResponse
 export async function rewriteContent(text: string, userInput: string) {
   console.log('Calling rewrite API with:', { text, userInput });
 
+  const controller = new AbortController();
+
   try {
-    const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     const maxRetries = 3;
@@ -88,9 +89,6 @@ export async function rewriteContent(text: string, userInput: string) {
             'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
             'Content-Type': 'application/json',
             'Accept': 'text/event-stream',
-            'Connection': 'keep-alive',
-            'Cache-Control': 'no-cache',
-            'User-Agent': navigator.userAgent,
           },
           body: JSON.stringify({
             workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
@@ -103,8 +101,6 @@ export async function rewriteContent(text: string, userInput: string) {
           signal: controller.signal,
           mode: 'cors',
           credentials: 'omit',
-          timeout: 60000,
-          cache: 'no-store',
         });
 
         if (!response.ok) {
