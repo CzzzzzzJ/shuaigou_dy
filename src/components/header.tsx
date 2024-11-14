@@ -3,6 +3,7 @@ import { Button } from "./ui/button"
 import { useNavigate } from "react-router-dom"
 import { UserButton, SignInButton, useUser } from "@clerk/clerk-react"
 import { Loader2 } from "lucide-react"
+import { PointsDisplay } from './points-display';
 
 interface HeaderProps {
   className?: string
@@ -33,6 +34,7 @@ export function Header({ className }: HeaderProps) {
           </div>
         ) : isSignedIn ? (
           <>
+            <PointsDisplay />
             <Button 
               variant="ghost" 
               className="text-[#8B7355]"

@@ -37,8 +37,8 @@ function cacheUser(user: DbUser) {
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
-  const [dbUser, setDbUser] = useState<DbUser | null>(() => getCachedUser());
-  const [isLoading, setIsLoading] = useState(!dbUser);
+  const [dbUser, setDbUser] = useState<DbUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const refreshUser = async () => {
     if (!user) return;
@@ -47,19 +47,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       // 先尝试获取用户
       let userData = await getUserByClerkId(user.id);
       
-      // 如果用户不存在，创建新用户
-      if (!userData) {
+      // 如果用户不存在或需要更新，创建/更新用户
+      if (!userData || userData.name !== user.fullName) {
         userData = await createUser(
           user.id,
           user.primaryEmailAddress?.emailAddress || '',
-          user.fullName || '',
+          user.fullName || user.username || '用户',  // 添加后备选项
           user.imageUrl
         );
       }
       
       if (userData) {
         setDbUser(userData);
-        cacheUser(userData);
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
@@ -68,11 +67,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 监听用户信息变化
   useEffect(() => {
-    if (user && !dbUser) {
+    if (user) {
       refreshUser();
+    } else {
+      setDbUser(null);
+      setIsLoading(false);
     }
-  }, [user]);
+  }, [user, user?.fullName]); // 添加 fullName 到依赖数组
 
   return (
     <UserContext.Provider value={{ dbUser, isLoading, refreshUser }}>
