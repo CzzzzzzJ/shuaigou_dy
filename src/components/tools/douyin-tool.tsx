@@ -1,4 +1,4 @@
-import { ArrowLeft, Copy, Wand2, Brain, Loader2, ArrowUp } from 'lucide-react';
+import { ArrowLeft, Copy, Wand2, Brain, Loader2, ArrowUp, Coins, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,27 +9,44 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { extractDouyinContent, rewriteContent } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useUser, useClerk } from "@clerk/clerk-react";
+import { useDbUser } from "@/contexts/user-context";
+import { usePoints } from "@/lib/db";
 
 interface DouyinToolProps {
   onBack: () => void;
 }
 
 export function DouyinTool({ onBack }: DouyinToolProps) {
-  const [url, setUrl] = useState('');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const { isSignedIn, isLoaded } = useUser();
+  const { openSignIn } = useClerk();
+  const { dbUser, refreshUser } = useDbUser();
+  const { toast } = useToast();
+  
+  // 添加所有必要的状态声明
+  const [url, setUrl] = useState(() => localStorage.getItem('douyin_url') || '');
+  const [title, setTitle] = useState(() => localStorage.getItem('douyin_title') || '');
+  const [content, setContent] = useState(() => localStorage.getItem('douyin_content') || '');
   const [isLoading, setIsLoading] = useState(false);
   const [isRewriting, setIsRewriting] = useState(false);
-  const [rewriteInput, setRewriteInput] = useState('');
+  const [rewriteInput, setRewriteInput] = useState(() => localStorage.getItem('douyin_rewrite_input') || '');
   const [rewrittenContent, setRewrittenContent] = useState('');
   const [useExtractedContent, setUseExtractedContent] = useState(true);
-  const [customContent, setCustomContent] = useState('');
-  const { toast } = useToast();
+  const [customContent, setCustomContent] = useState(() => localStorage.getItem('douyin_custom_content') || '');
+  
+  // 保存状态到 localStorage
+  useEffect(() => {
+    localStorage.setItem('douyin_url', url);
+    localStorage.setItem('douyin_title', title);
+    localStorage.setItem('douyin_content', content);
+    localStorage.setItem('douyin_rewrite_input', rewriteInput);
+    localStorage.setItem('douyin_custom_content', customContent);
+  }, [url, title, content, rewriteInput, customContent]);
 
   const handleExtract = async () => {
     if (!url.trim()) {
@@ -77,12 +94,50 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
   };
 
   const handleRewrite = async () => {
-    const sourceContent = useExtractedContent ? content : customContent;
+    console.log('Starting rewrite process...');
     
+    if (!isLoaded) {
+      console.log('User not loaded yet');
+      return;
+    }
+    
+    if (!isSignedIn) {
+      console.log('User not signed in');
+      // 打开登录窗口，并保持在当前页面
+      openSignIn({
+        redirectUrl: window.location.pathname,
+        afterSignInUrl: window.location.pathname,
+        appearance: {
+          elements: {
+            rootBox: {
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            },
+          },
+        },
+      });
+      return;
+    }
+
+    console.log('User status:', { isSignedIn, dbUser });
+
+    if (!dbUser || dbUser.points < 30) {
+      console.log('Insufficient points:', dbUser?.points);
+      toast({
+        title: "积分不足",
+        description: "使用 AI 仿写功能需要 30 积分",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const sourceContent = useExtractedContent ? content : customContent;
     console.log('Source content:', sourceContent);
     console.log('Rewrite input:', rewriteInput);
-
+    
     if (!sourceContent) {
+      console.log('No source content');
       toast({
         title: useExtractedContent ? "请先提取文案" : "请输入需要仿写的文案",
         variant: "destructive",
@@ -91,6 +146,7 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
     }
 
     if (!rewriteInput) {
+      console.log('No rewrite input');
       toast({
         title: "请输入仿写要求",
         variant: "destructive",
@@ -100,26 +156,45 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
 
     setIsRewriting(true);
     try {
+      console.log('Calling rewriteContent API...');
       const result = await rewriteContent(sourceContent, rewriteInput);
       console.log('API result:', result);
+      
+      console.log('Attempting to deduct points...');
+      const success = await usePoints(dbUser.clerk_id, 30);
+      
+      if (!success) {
+        throw new Error('积分扣除失败');
+      }
+      
+      console.log('Points deducted successfully');
+      
+      await refreshUser();
       
       setRewrittenContent(result.content);
       
       toast({
         title: "仿写成功",
-        description: "新文案已生成",
+        description: "新文案已生成，已扣除 30 积分",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Rewrite error:', error);
       toast({
         title: "仿写失败",
-        description: "请稍后重试",
+        description: error instanceof Error ? error.message : "请稍后重试",
         variant: "destructive",
       });
     } finally {
       setIsRewriting(false);
     }
   };
+
+  // 清理函数
+  useEffect(() => {
+    return () => {
+      // 组件卸载时不清除 localStorage，保持用户输入
+    };
+  }, []);
 
   return (
     <div className="flex-1 overflow-auto bg-[#FFFCF5] p-6">
@@ -136,7 +211,7 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
         <h1 className="text-2xl font-semibold text-[#8B7355]">AI 文案助手</h1>
       </div>
 
-      {/* 流程步骤容器 */}
+      {/* 流程步骤容 */}
       <div className="max-w-4xl mx-auto space-y-8">
         {/* 步骤 1: 文案提取 */}
         <div className="relative">
@@ -253,6 +328,10 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
           <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#F5D0A9] text-[#8B7355] font-bold">2</div>
             <h2 className="text-xl font-medium text-[#8B7355]">AI 文案仿写</h2>
+            <div className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-[#FFF8E7] rounded-full border border-[#F5D0A9]/30">
+              <Coins className="w-4 h-4 text-[#8B7355]" />
+              <span className="text-sm text-[#8B7355]">消耗 30 积分</span>
+            </div>
           </div>
 
           <Card className="p-6 bg-white/50 backdrop-blur-sm border-[#E8E3D7]">
@@ -326,12 +405,18 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
                   <Wand2 className="h-4 w-4" />
                   <span>仿写要求</span>
                 </Label>
-                <Textarea
-                  value={rewriteInput}
-                  onChange={(e) => setRewriteInput(e.target.value)}
-                  placeholder="请输入您的仿写需求（例如：改成卖汉服的）..."
-                  className="border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9] transition-all duration-300 hover:bg-white/90"
-                />
+                <div className="relative">
+                  <Textarea
+                    value={rewriteInput}
+                    onChange={(e) => setRewriteInput(e.target.value)}
+                    placeholder="请输入您的仿写需求（例如：改成卖汉服的）..."
+                    className="border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9] transition-all duration-300 hover:bg-white/90"
+                  />
+                  <div className="absolute right-2 top-2 flex items-center gap-1 px-2 py-1 bg-[#FFF8E7] rounded-full text-xs text-[#8B7355]/70">
+                    <Info className="w-3 h-3" />
+                    <span>每次生成消耗 30 积分</span>
+                  </div>
+                </div>
               </div>
 
               {/* 生成按钮 */}
@@ -363,48 +448,46 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
 
               {/* 仿写结果 */}
               {(rewrittenContent || isRewriting) && (
-                <div className="mt-6 space-y-2 p-4 rounded-lg border border-[#E8E3D7] bg-gradient-to-br from-white to-[#FFF8E7] transition-all duration-300">
+                <div className="mt-6 space-y-2 p-4 bg-[#FFF8E7] rounded-lg border border-[#E8E3D7]">
                   <div className="flex items-center justify-between">
                     <Label className="text-[#8B7355] font-medium flex items-center gap-2">
                       <Brain className="h-4 w-4" />
-                      <span>仿写结果</span>
+                      <span>AI 仿写结果</span>
                     </Label>
                     {rewrittenContent && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-[#8B7355] hover:bg-[#F5D0A9]/20 transition-colors duration-300"
+                        className="text-[#8B7355] hover:bg-[#F5D0A9]/20"
                         onClick={() => copyToClipboard(rewrittenContent)}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
-                  <div className="relative">
-                    <Textarea
-                      value={rewrittenContent}
-                      readOnly
-                      placeholder={isRewriting ? "正在生成中..." : "仿写结果将在这里显示..."}
-                      className="min-h-[200px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9] transition-all duration-300"
-                    />
-                    {isRewriting && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-md">
-                        <div className="flex flex-col items-center gap-4 p-6 bg-white/90 rounded-xl shadow-lg">
-                          <div className="relative">
-                            <div className="absolute -inset-4 bg-gradient-to-r from-[#F5D0A9]/40 to-[#FFE4B5]/40 rounded-full opacity-75 blur-lg animate-pulse" />
-                            <div className="relative w-12 h-12">
-                              <div className="absolute inset-0 rounded-full border-4 border-[#F5D0A9] border-t-transparent animate-spin" />
-                              <div className="absolute inset-2 rounded-full border-4 border-[#8B7355] border-b-transparent animate-spin-reverse" />
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-[#8B7355] font-medium">AI 正在创作中</p>
-                            <p className="text-[#B4A89A] text-sm animate-pulse">请稍候...</p>
+                  <Textarea
+                    value={rewrittenContent}
+                    readOnly
+                    placeholder={isRewriting ? "正在生成中..." : "仿写结果将在这里显示..."}
+                    className="min-h-[200px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
+                  />
+                  {isRewriting && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-md">
+                      <div className="flex flex-col items-center gap-4 p-6 bg-white/90 rounded-xl shadow-lg">
+                        <div className="relative">
+                          <div className="absolute -inset-4 bg-gradient-to-r from-[#F5D0A9]/40 to-[#FFE4B5]/40 rounded-full opacity-75 blur-lg animate-pulse" />
+                          <div className="relative w-12 h-12">
+                            <div className="absolute inset-0 rounded-full border-4 border-[#F5D0A9] border-t-transparent animate-spin" />
+                            <div className="absolute inset-2 rounded-full border-4 border-[#8B7355] border-b-transparent animate-spin-reverse" />
                           </div>
                         </div>
+                        <div className="text-center">
+                          <p className="text-[#8B7355] font-medium">AI 正在创作中</p>
+                          <p className="text-[#B4A89A] text-sm animate-pulse">请稍候...</p>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

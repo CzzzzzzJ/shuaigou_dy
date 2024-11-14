@@ -153,26 +153,45 @@ export async function resetUserPoints(clerkId: string): Promise<void> {
 // 使用积分
 export async function usePoints(clerkId: string, amount: number): Promise<boolean> {
   try {
-    const currentPoints = await getUserPoints(clerkId);
-    if (currentPoints < amount) {
+    console.log('Deducting points for user:', clerkId, 'amount:', amount);
+
+    // 先获取当前积分
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('points')
+      .eq('clerk_id', clerkId)
+      .single();
+
+    if (fetchError || !user) {
+      console.error('Error fetching user points:', fetchError);
       return false;
     }
 
-    const { error } = await supabase
-      .from('users')
-      .update({
-        points: currentPoints - amount
-      })
-      .eq('clerk_id', clerkId);
+    console.log('Current points:', user.points);
 
-    if (error) throw error;
-    
-    // 更新缓存
-    POINTS_CACHE.set(clerkId, { 
-      points: currentPoints - amount, 
-      timestamp: Date.now() 
-    });
-    
+    // 检查积分是否足够
+    if (user.points < amount) {
+      console.log('Insufficient points');
+      return false;
+    }
+
+    // 调用存储过程扣除积分
+    const { data, error: deductError } = await supabase
+      .rpc('deduct_user_points', {
+        user_clerk_id: clerkId,
+        points_amount: amount
+      });
+
+    if (deductError) {
+      console.error('Error deducting points:', deductError);
+      return false;
+    }
+
+    console.log('Points deduction result:', data);
+
+    // 清除缓存
+    POINTS_CACHE.delete(clerkId);
+
     return true;
   } catch (error) {
     console.error('Error using points:', error);

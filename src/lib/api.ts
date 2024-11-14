@@ -89,16 +89,20 @@ export async function rewriteContent(text: string, userInput: string) {
       })
     });
 
+    console.log('API response status:', response.status);
+
     if (!response.ok) {
-      throw new Error('API request failed');
+      console.error('API error:', response.status, response.statusText);
+      throw new Error('Failed to rewrite content');
     }
 
-    // 读取响应文本
     const responseText = await response.text();
-    
+    console.log('Raw API response:', responseText);
+
     // 分割事件流
     const events = responseText.split('\n\n').filter(Boolean);
-    
+    console.log('Parsed events:', events);
+
     // 查找包含输出内容的消息
     for (const event of events) {
       if (event.includes('"node_title":"End"')) {
@@ -107,6 +111,7 @@ export async function rewriteContent(text: string, userInput: string) {
           if (line.startsWith('data: ')) {
             const data = JSON.parse(line.slice(6));
             const content = JSON.parse(data.content);
+            console.log('Parsed content:', content);
             return { content: content.output };
           }
         }
