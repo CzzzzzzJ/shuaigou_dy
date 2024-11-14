@@ -1,4 +1,4 @@
-import type { VercelApiHandler } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 interface RequestBody {
   workflow_id: string;
@@ -12,37 +12,39 @@ interface RequestBody {
 interface ResponseError {
   error: string;
   message?: string;
+  status?: number;
 }
 
-export default async function handler(
-  request: Request,
-  response: {
-    setHeader: (name: string, value: string | boolean) => void;
-    status: (code: number) => { json: (data: any) => void; end: () => void };
-  }
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 允许跨域
-  response.setHeader('Access-Control-Allow-Credentials', true);
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (request.method === 'OPTIONS') {
-    return response.status(200).end();
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
     console.log('Proxy received request:', {
-      method: request.method,
-      headers: request.headers,
+      method: req.method,
+      headers: req.headers,
     });
 
-    const body = request.body as RequestBody;
+    // 确保请求体是正确的格式
+    const body = req.body as RequestBody;
+    if (!body?.workflow_id || !body?.parameters) {
+      return res.status(400).json({
+        error: 'Invalid request body',
+        message: 'Missing required fields'
+      } as ResponseError);
+    }
 
     const cozeResponse = await fetch('https://api.coze.com/v1/workflow/stream_run', {
       method: 'POST',
       headers: {
-        'Authorization': request.headers.get('authorization') || '',
+        'Authorization': req.headers.authorization || '',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body)
@@ -53,7 +55,7 @@ export default async function handler(
         status: cozeResponse.status,
         statusText: cozeResponse.statusText
       });
-      return response.status(cozeResponse.status).json({
+      return res.status(cozeResponse.status).json({
         error: 'Coze API error',
         status: cozeResponse.status,
         message: cozeResponse.statusText
@@ -62,11 +64,11 @@ export default async function handler(
 
     const data = await cozeResponse.text();
     console.log('Proxy response success');
-    return response.status(200).json({ data });
+    return res.status(200).json({ data });
   } catch (err) {
     const error = err as Error;
     console.error('Proxy error:', error);
-    return response.status(500).json({
+    return res.status(500).json({
       error: 'Internal server error',
       message: error.message || 'Unknown error'
     } as ResponseError);
