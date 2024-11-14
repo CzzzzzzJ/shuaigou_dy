@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "source": "/api/coze",
+      "destination": "/api/coze.ts"
+    }
+  ]
+} 

@@ -70,112 +70,90 @@ export async function extractDouyinContent(url: string): Promise<ExtractResponse
 
 // 文案仿写接口
 export async function rewriteContent(text: string, userInput: string) {
-  console.log('Calling rewrite API with:', { text, userInput });
-
   const controller = new AbortController();
 
   try {
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-    const maxRetries = 3;
-    let retryCount = 0;
-    let lastError: Error | null = null;
-
-    while (retryCount < maxRetries) {
-      try {
-        const response = await fetch('https://api.coze.com/v1/workflow/stream_run', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
-            'Content-Type': 'application/json',
-            'Accept': 'text/event-stream',
-          },
-          body: JSON.stringify({
-            workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
-            parameters: {
-              user_id: "default_user",
-              text: text,
-              user_input: userInput
-            }
-          }),
-          signal: controller.signal,
-          mode: 'cors',
-          credentials: 'omit',
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const responseText = await response.text();
-        console.log('Raw API response:', responseText);
-
-        if (!responseText) {
-          throw new Error('Empty response');
-        }
-
-        const events = responseText.split('\n\n').filter(Boolean);
-        console.log('Parsed events:', events);
-
-        for (const event of events) {
-          if (event.includes('"node_title":"End"')) {
-            const lines = event.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6));
-                  const content = JSON.parse(data.content);
-                  console.log('Parsed content:', content);
-                  
-                  if (!content.output || typeof content.output !== 'string' || content.output.length < 10) {
-                    throw new Error('Invalid content format');
-                  }
-                  
-                  clearTimeout(timeoutId);
-                  return { content: content.output };
-                } catch (parseError) {
-                  console.error('Parse error:', parseError);
-                  throw new Error('Response format error');
-                }
-              }
-            }
+    // 先尝试直接调用
+    try {
+      const directResponse = await fetch('https://api.coze.com/v1/workflow/stream_run', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
+          parameters: {
+            user_id: "default_user",
+            text,
+            user_input: userInput
           }
-        }
+        }),
+        signal: controller.signal,
+      });
 
-        throw new Error('No valid content found');
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Unknown error');
-        retryCount++;
-        
-        if (retryCount < maxRetries) {
-          console.log(`Retry attempt ${retryCount} of ${maxRetries}`);
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
-          continue;
-        }
-        throw lastError;
+      if (!directResponse.ok) {
+        throw new Error('Direct API call failed');
       }
-    }
 
-    throw new Error('Max retries exceeded');
-  } catch (error: unknown) {
+      const responseText = await directResponse.text();
+      return handleResponse(responseText);
+    } catch (directError) {
+      console.log('Direct API call failed, trying proxy...');
+      
+      // 如果直接调用失败，使用代理
+      const proxyResponse = await fetch(`${window.location.origin}/api/coze`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
+          parameters: {
+            user_id: "default_user",
+            text,
+            user_input: userInput
+          }
+        }),
+        signal: controller.signal,
+      });
+
+      if (!proxyResponse.ok) {
+        throw new Error('Proxy API call failed');
+      }
+
+      const { data } = await proxyResponse.json();
+      return handleResponse(data);
+    }
+  } catch (error) {
     console.error('API error:', error);
-    
-    if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        throw new Error('请求超时，请重试');
-      }
-      if (error.message.includes('Failed to fetch')) {
-        throw new Error('网络请求失败，请检查网络连接');
-      }
-      throw new Error(error.message || '生成失败，请重试');
-    }
-    
-    if (!navigator.onLine) {
-      throw new Error('网络连接失败，请检查网络设置');
-    }
-    
-    throw new Error('未知错误，请重试');
+    throw error;
   } finally {
     controller.abort();
   }
+}
+
+// 处理响应数据的辅助函数
+function handleResponse(responseText: string) {
+  if (!responseText) {
+    throw new Error('Empty response');
+  }
+
+  const events = responseText.split('\n\n').filter(Boolean);
+  
+  for (const event of events) {
+    if (event.includes('"node_title":"End"')) {
+      const lines = event.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.slice(6));
+          const content = JSON.parse(data.content);
+          return { content: content.output };
+        }
+      }
+    }
+  }
+
+  throw new Error('No valid content found in response');
 }
