@@ -70,33 +70,58 @@ export async function extractDouyinContent(url: string): Promise<ExtractResponse
 
 // 文案仿写接口
 export async function rewriteContent(text: string, userInput: string) {
+  console.log('Starting rewrite request...');
+
+  const requestBody = {
+    workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
+    parameters: {
+      user_id: "default_user",
+      text,
+      user_input: userInput
+    }
+  };
+
   try {
-    // 使用完整的 API 路径
-    const response = await fetch('/api/coze', {
+    // 先尝试直接调用
+    console.log('Attempting direct API call...');
+    const directResponse = await fetch('https://api.coze.com/v1/workflow/stream_run', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
-        parameters: {
-          user_id: "default_user",
-          text,
-          user_input: userInput
-        }
-      })
+      body: JSON.stringify(requestBody)
     });
 
-    if (!response.ok) {
-      throw new Error(`代理服务器请求失败: ${response.status}`);
+    if (directResponse.ok) {
+      const responseText = await directResponse.text();
+      return handleResponse(responseText);
     }
 
-    const { data } = await response.json();
+    // 如果直接调用失败，使用代理
+    console.log('Direct API call failed, trying proxy...');
+    const proxyResponse = await fetch('/api/coze', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!proxyResponse.ok) {
+      const errorData = await proxyResponse.json().catch(() => ({}));
+      throw new Error(`代理服务器请求失败: ${proxyResponse.status} ${errorData.message || ''}`);
+    }
+
+    const { data } = await proxyResponse.json();
     return handleResponse(data);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('API error:', error);
-    throw error;
+    if (error instanceof Error) {
+      throw new Error(error.message || '生成失败，请稍后重试');
+    }
+    throw new Error('生成失败，请稍后重试');
   }
 }
 

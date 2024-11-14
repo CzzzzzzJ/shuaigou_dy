@@ -1,7 +1,4 @@
 export default async function handler(req, res) {
-  // 添加路由日志
-  console.log('API Route Hit:', req.url);
-
   // 允许跨域
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
