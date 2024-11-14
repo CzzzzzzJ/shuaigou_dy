@@ -136,34 +136,37 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, 'id'>;
 
-function toast({ ...props }: Toast) {
+const addToast = (props: ToastProps) => {
   const id = genId();
 
-  const update = (props: ToasterToast) =>
-    dispatch({
-      type: 'UPDATE_TOAST',
-      toast: { ...props, id },
-    });
-  const dismiss = () => dispatch({ type: 'DISMISS_TOAST', toastId: id });
+  const update = (props: ToastProps) => {
+    setToasts((toasts) => toasts.map((t) => (t.id === id ? { ...t, ...props } : t)));
+  };
 
-  dispatch({
-    type: 'ADD_TOAST',
-    toast: {
+  const dismiss = () => {
+    setToasts((toasts) => toasts.filter((t) => t.id !== id));
+  };
+
+  const onOpenChange = (open: boolean) => {
+    if (!open) dismiss();
+  };
+
+  setToasts((toasts) => [
+    ...toasts,
+    {
       ...props,
       id,
       open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss();
-      },
+      onOpenChange,
     },
-  });
+  ]);
 
   return {
-    id: id,
+    id,
     dismiss,
     update,
   };
-}
+};
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
