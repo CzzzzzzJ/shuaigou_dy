@@ -70,25 +70,52 @@ export async function extractDouyinContent(url: string): Promise<ExtractResponse
 
 // 文案仿写接口
 export async function rewriteContent(text: string, userInput: string) {
-  const response = await fetch('https://api.coze.com/v1/workflow/stream_run', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
-      parameters: {
-        user_id: "default_user",
-        text: text,
-        user_input: userInput
+  console.log('Calling rewrite API with:', { text, userInput });
+
+  try {
+    const response = await fetch('https://api.coze.com/v1/workflow/stream_run', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
+        parameters: {
+          user_id: "default_user",
+          text: text,
+          user_input: userInput
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    // 读取响应文本
+    const responseText = await response.text();
+    
+    // 分割事件流
+    const events = responseText.split('\n\n').filter(Boolean);
+    
+    // 查找包含输出内容的消息
+    for (const event of events) {
+      if (event.includes('"node_title":"End"')) {
+        const lines = event.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+            const content = JSON.parse(data.content);
+            return { content: content.output };
+          }
+        }
       }
-    })
-  });
+    }
 
-  if (!response.ok) {
-    throw new Error('Failed to rewrite content');
+    throw new Error('No valid content found in response');
+  } catch (error) {
+    console.error('API error:', error);
+    throw error;
   }
-
-  return response.json();
 }

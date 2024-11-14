@@ -78,6 +78,9 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
   const handleRewrite = async () => {
     const sourceContent = useExtractedContent ? content : customContent;
     
+    console.log('Source content:', sourceContent);
+    console.log('Rewrite input:', rewriteInput);
+
     if (!sourceContent) {
       toast({
         title: useExtractedContent ? "请先提取文案" : "请输入需要仿写的文案",
@@ -97,12 +100,16 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
     setIsRewriting(true);
     try {
       const result = await rewriteContent(sourceContent, rewriteInput);
+      console.log('API result:', result);
+      
       setRewrittenContent(result.content);
+      
       toast({
         title: "仿写成功",
         description: "新文案已生成",
       });
     } catch (error) {
+      console.error('Rewrite error:', error);
       toast({
         title: "仿写失败",
         description: "请稍后重试",
@@ -330,27 +337,34 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
                   ) : '开始仿写'}
                 </Button>
 
-                {/* 仿写结果 */}
-                {rewrittenContent && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-[#8B7355]">仿写结果</Label>
+                {/* 仿写结果展示 */}
+                <div className="mt-6 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[#8B7355] font-medium">仿写结果</Label>
+                    {rewrittenContent && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-[#8B7355]"
+                        className="text-[#8B7355] hover:bg-[#F5D0A9]/20"
                         onClick={() => copyToClipboard(rewrittenContent)}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
-                    </div>
-                    <Textarea
-                      value={rewrittenContent}
-                      readOnly
-                      className="min-h-[200px] border-[#E8E3D7] bg-white/80"
-                    />
+                    )}
                   </div>
-                )}
+                  <Textarea
+                    value={rewrittenContent}
+                    readOnly
+                    placeholder={isRewriting ? "正在生成中..." : "仿写结果将在这里显示..."}
+                    className="min-h-[200px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
+                  />
+                  {isRewriting && (
+                    <div className="flex items-center justify-center gap-2 text-[#8B7355]">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>正在生成仿写内容...</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </Card>
           </AccordionContent>
