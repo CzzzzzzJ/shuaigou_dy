@@ -70,58 +70,32 @@ export async function extractDouyinContent(url: string): Promise<ExtractResponse
 
 // 文案仿写接口
 export async function rewriteContent(text: string, userInput: string) {
-  console.log('Starting rewrite request with:', { text, userInput });
-
   try {
-    // 构建请求 URL
-    const apiUrl = `${window.location.origin}/api/coze`;
-    console.log('Using API URL:', apiUrl);
-
-    const requestBody = {
-      workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
-      parameters: {
-        user_id: "default_user",
-        text,
-        user_input: userInput
-      }
-    };
-
-    console.log('Request body:', requestBody);
-    console.log('Authorization token length:', import.meta.env.VITE_COZE_REWRITE_API_TOKEN.length);
-
-    const response = await fetch(apiUrl, {
+    // 使用完整的 API 路径
+    const response = await fetch('/api/coze', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify({
+        workflow_id: import.meta.env.VITE_COZE_REWRITE_WORKFLOW_ID,
+        parameters: {
+          user_id: "default_user",
+          text,
+          user_input: userInput
+        }
+      })
     });
 
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API error response:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
-      });
-      throw new Error(`代理服务器请求失败: ${response.status} ${errorText}`);
+      throw new Error(`代理服务器请求失败: ${response.status}`);
     }
 
     const { data } = await response.json();
-    console.log('Response data length:', data.length);
-    console.log('Response data preview:', data.substring(0, 200));
-
     return handleResponse(data);
-  } catch (error: unknown) {
-    console.error('API error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
+  } catch (error) {
+    console.error('API error:', error);
     throw error;
   }
 }
