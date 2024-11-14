@@ -134,9 +134,12 @@ export async function rewriteContent(text: string, userInput: string) {
       const { data } = await proxyResponse.json();
       return handleResponse(data);
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('API error:', error);
-    throw new Error(error.message || '生成失败，请稍后重试');
+    if (error instanceof Error) {
+      throw new Error(error.message || '生成失败，请稍后重试');
+    }
+    throw new Error('生成失败，请稍后重试');
   }
 }
 
