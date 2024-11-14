@@ -70,11 +70,12 @@ export async function extractDouyinContent(url: string): Promise<ExtractResponse
 
 // 文案仿写接口
 export async function rewriteContent(text: string, userInput: string) {
-  const controller = new AbortController();
+  console.log('Starting rewrite request...');
 
   try {
     // 先尝试直接调用
     try {
+      console.log('Attempting direct API call...');
       const directResponse = await fetch('https://api.coze.com/v1/workflow/stream_run', {
         method: 'POST',
         headers: {
@@ -88,21 +89,24 @@ export async function rewriteContent(text: string, userInput: string) {
             text,
             user_input: userInput
           }
-        }),
-        signal: controller.signal,
+        })
       });
 
       if (!directResponse.ok) {
+        console.log('Direct API call failed:', directResponse.status);
         throw new Error('Direct API call failed');
       }
 
       const responseText = await directResponse.text();
       return handleResponse(responseText);
     } catch (directError) {
-      console.log('Direct API call failed, trying proxy...');
+      console.log('Direct API call failed, trying proxy...', directError);
       
       // 如果直接调用失败，使用代理
-      const proxyResponse = await fetch(`${window.location.origin}/api/coze`, {
+      const proxyUrl = `${window.location.origin}/api/coze`;
+      console.log('Using proxy URL:', proxyUrl);
+
+      const proxyResponse = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
@@ -115,12 +119,16 @@ export async function rewriteContent(text: string, userInput: string) {
             text,
             user_input: userInput
           }
-        }),
-        signal: controller.signal,
+        })
       });
 
       if (!proxyResponse.ok) {
-        throw new Error('Proxy API call failed');
+        const errorData = await proxyResponse.json().catch(() => ({}));
+        console.error('Proxy API call failed:', {
+          status: proxyResponse.status,
+          data: errorData
+        });
+        throw new Error(`代理服务器请求失败: ${proxyResponse.status} ${errorData.message || ''}`);
       }
 
       const { data } = await proxyResponse.json();
@@ -128,32 +136,36 @@ export async function rewriteContent(text: string, userInput: string) {
     }
   } catch (error) {
     console.error('API error:', error);
-    throw error;
-  } finally {
-    controller.abort();
+    throw new Error(error.message || '生成失败，请稍后重试');
   }
 }
 
 // 处理响应数据的辅助函数
 function handleResponse(responseText: string) {
   if (!responseText) {
-    throw new Error('Empty response');
+    throw new Error('返回内容为空');
   }
 
-  const events = responseText.split('\n\n').filter(Boolean);
-  
-  for (const event of events) {
-    if (event.includes('"node_title":"End"')) {
-      const lines = event.split('\n');
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = JSON.parse(line.slice(6));
-          const content = JSON.parse(data.content);
-          return { content: content.output };
+  try {
+    const events = responseText.split('\n\n').filter(Boolean);
+    console.log('Processing response events:', events.length);
+    
+    for (const event of events) {
+      if (event.includes('"node_title":"End"')) {
+        const lines = event.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+            const content = JSON.parse(data.content);
+            return { content: content.output };
+          }
         }
       }
     }
-  }
 
-  throw new Error('No valid content found in response');
+    throw new Error('未找到有效的返回内容');
+  } catch (error) {
+    console.error('Response parsing error:', error);
+    throw new Error('返回内容格式错误');
+  }
 }
