@@ -1,19 +1,4 @@
-interface RequestBody {
-  workflow_id: string;
-  parameters: {
-    user_id: string;
-    text: string;
-    user_input: string;
-  };
-}
-
-interface ResponseError {
-  error: string;
-  message?: string;
-  status?: number;
-}
-
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   // 允许跨域
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -32,18 +17,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    console.log('Proxy received request:', {
-      method: req.method,
-      headers: req.headers,
-    });
-
-    const body = req.body as RequestBody;
-    if (!body?.workflow_id || !body?.parameters) {
-      return res.status(400).json({
-        error: 'Invalid request body',
-        message: 'Missing required fields'
-      });
-    }
+    console.log('Proxy received request');
 
     const cozeResponse = await fetch('https://api.coze.com/v1/workflow/stream_run', {
       method: 'POST',
@@ -51,14 +25,11 @@ export default async function handler(req: any, res: any) {
         'Authorization': req.headers.authorization || '',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(req.body)
     });
 
     if (!cozeResponse.ok) {
-      console.error('Coze API error:', {
-        status: cozeResponse.status,
-        statusText: cozeResponse.statusText
-      });
+      console.error('Coze API error:', cozeResponse.status);
       return res.status(cozeResponse.status).json({
         error: 'Coze API error',
         status: cozeResponse.status,
@@ -69,11 +40,11 @@ export default async function handler(req: any, res: any) {
     const data = await cozeResponse.text();
     console.log('Proxy response success');
     return res.status(200).json({ data });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Proxy error:', error);
     return res.status(500).json({
       error: 'Internal server error',
-      message: error.message || 'Unknown error'
+      message: error?.message || 'Unknown error'
     });
   }
 } 
