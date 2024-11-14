@@ -8,12 +8,38 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// 创建 Supabase 客户端
+// 创建 Supabase 客户端并配置
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    persistSession: false // 禁用会话持久化
+    persistSession: false
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'Cache-Control': 'max-age=300' // 5分钟缓存
+    }
   }
 });
+
+// 添加查询缓存
+const queryCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 1000 * 60 * 5; // 5分钟缓存
+
+async function cachedQuery<T>(
+  key: string,
+  queryFn: () => Promise<T>
+): Promise<T> {
+  const cached = queryCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+
+  const data = await queryFn();
+  queryCache.set(key, { data, timestamp: Date.now() });
+  return data;
+}
 
 // 插入新用户
 export async function createUser(

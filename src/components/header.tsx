@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "./ui/button"
 import { useNavigate } from "react-router-dom"
 import { UserButton, SignInButton, useUser } from "@clerk/clerk-react"
+import { Loader2 } from "lucide-react"
 
 interface HeaderProps {
   className?: string
@@ -9,7 +10,7 @@ interface HeaderProps {
 
 export function Header({ className }: HeaderProps) {
   const navigate = useNavigate()
-  const { isSignedIn } = useUser()
+  const { isSignedIn, isLoaded } = useUser()
 
   return (
     <header className={cn("flex h-16 items-center justify-between border-b px-6", className)}>
@@ -24,7 +25,13 @@ export function Header({ className }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        {isSignedIn ? (
+        {!isLoaded ? (
+          // 加载状态显示骨架屏
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-9 bg-gray-200 animate-pulse rounded-md"></div>
+            <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
+          </div>
+        ) : isSignedIn ? (
           <>
             <Button 
               variant="ghost" 
