@@ -1,191 +1,104 @@
-import * as React from 'react';
+import * as React from "react";
+import { createContext, useContext, useState } from "react";
 
-import type { ToastActionElement, ToastProps } from '@/components/ui/toast';
+type ToastVariant = 'default' | 'destructive';
 
-const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
-
-type ToasterToast = ToastProps & {
+interface Toast {
   id: string;
-  title?: React.ReactNode;
-  description?: React.ReactNode;
-  action?: ToastActionElement;
-};
-
-const actionTypes = {
-  ADD_TOAST: 'ADD_TOAST',
-  UPDATE_TOAST: 'UPDATE_TOAST',
-  DISMISS_TOAST: 'DISMISS_TOAST',
-  REMOVE_TOAST: 'REMOVE_TOAST',
-} as const;
-
-let count = 0;
-
-function genId() {
-  count = (count + 1) % Number.MAX_SAFE_INTEGER;
-  return count.toString();
+  title?: string;
+  description?: string;
+  variant?: ToastVariant;
 }
 
-type ActionType = typeof actionTypes;
-
-type Action =
-  | {
-      type: ActionType['ADD_TOAST'];
-      toast: ToasterToast;
-    }
-  | {
-      type: ActionType['UPDATE_TOAST'];
-      toast: Partial<ToasterToast>;
-    }
-  | {
-      type: ActionType['DISMISS_TOAST'];
-      toastId?: ToasterToast['id'];
-    }
-  | {
-      type: ActionType['REMOVE_TOAST'];
-      toastId?: ToasterToast['id'];
-    };
-
-interface State {
-  toasts: ToasterToast[];
+interface ToastContextType {
+  toasts: Toast[];
+  toast: (props: { title?: string; description?: string; variant?: ToastVariant }) => void;
+  dismiss: (id: string) => void;
 }
 
-const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-const addToRemoveQueue = (toastId: string) => {
-  if (toastTimeouts.has(toastId)) {
-    return;
-  }
-
-  const timeout = setTimeout(() => {
-    toastTimeouts.delete(toastId);
-    dispatch({
-      type: 'REMOVE_TOAST',
-      toastId: toastId,
-    });
-  }, TOAST_REMOVE_DELAY);
-
-  toastTimeouts.set(toastId, timeout);
-};
-
-export const reducer = (state: State, action: Action): State => {
-  switch (action.type) {
-    case 'ADD_TOAST':
-      return {
-        ...state,
-        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
-      };
-
-    case 'UPDATE_TOAST':
-      return {
-        ...state,
-        toasts: state.toasts.map((t) =>
-          t.id === action.toast.id ? { ...t, ...action.toast } : t
-        ),
-      };
-
-    case 'DISMISS_TOAST': {
-      const { toastId } = action;
-
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
-      if (toastId) {
-        addToRemoveQueue(toastId);
-      } else {
-        state.toasts.forEach((toast) => {
-          addToRemoveQueue(toast.id);
-        });
-      }
-
-      return {
-        ...state,
-        toasts: state.toasts.map((t) =>
-          t.id === toastId || toastId === undefined
-            ? {
-                ...t,
-                open: false,
-              }
-            : t
-        ),
-      };
-    }
-    case 'REMOVE_TOAST':
-      if (action.toastId === undefined) {
-        return {
-          ...state,
-          toasts: [],
-        };
-      }
-      return {
-        ...state,
-        toasts: state.toasts.filter((t) => t.id !== action.toastId),
-      };
-  }
-};
-
-const listeners: Array<(state: State) => void> = [];
-
-let memoryState: State = { toasts: [] };
-
-function dispatch(action: Action) {
-  memoryState = reducer(memoryState, action);
-  listeners.forEach((listener) => {
-    listener(memoryState);
-  });
+interface ToastProviderProps {
+  children: React.ReactNode;
 }
 
-type Toast = Omit<ToasterToast, 'id'>;
+export function ToastProvider({ children }: ToastProviderProps) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-const addToast = (props: ToastProps) => {
-  const id = genId();
+  const toast = React.useCallback(({
+    title,
+    description,
+    variant = 'default',
+  }: {
+    title?: string;
+    description?: string;
+    variant?: ToastVariant;
+  }) => {
+    const id = Math.random().toString(36).slice(2, 9);
+    setToasts((prev) => [
+      ...prev,
+      { id, title, description, variant },
+    ]);
 
-  const update = (props: ToastProps) => {
-    setToasts((toasts) => toasts.map((t) => (t.id === id ? { ...t, ...props } : t)));
-  };
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 5000);
+  }, []);
 
-  const dismiss = () => {
-    setToasts((toasts) => toasts.filter((t) => t.id !== id));
-  };
+  const dismiss = React.useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
-  const onOpenChange = (open: boolean) => {
-    if (!open) dismiss();
-  };
-
-  setToasts((toasts) => [
-    ...toasts,
-    {
-      ...props,
-      id,
-      open: true,
-      onOpenChange,
-    },
-  ]);
-
-  return {
-    id,
-    dismiss,
-    update,
-  };
-};
-
-function useToast() {
-  const [state, setState] = React.useState<State>(memoryState);
-
-  React.useEffect(() => {
-    listeners.push(setState);
-    return () => {
-      const index = listeners.indexOf(setState);
-      if (index > -1) {
-        listeners.splice(index, 1);
-      }
-    };
-  }, [state]);
-
-  return {
-    ...state,
+  const value = React.useMemo(() => ({
+    toasts,
     toast,
-    dismiss: (toastId?: string) => dispatch({ type: 'DISMISS_TOAST', toastId }),
-  };
+    dismiss,
+  }), [toasts, toast, dismiss]);
+
+  return React.createElement(
+    ToastContext.Provider,
+    { value },
+    React.createElement(
+      React.Fragment,
+      null,
+      children,
+      React.createElement(
+        'div',
+        {
+          className: 'fixed bottom-0 right-0 p-4 space-y-2 z-50'
+        },
+        toasts.map((t) => 
+          React.createElement(
+            'div',
+            {
+              key: t.id,
+              className: `p-4 rounded-lg shadow-lg ${
+                t.variant === 'destructive'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-white text-gray-900'
+              }`
+            },
+            t.title && React.createElement(
+              'div',
+              { className: 'font-semibold' },
+              t.title
+            ),
+            t.description && React.createElement(
+              'div',
+              null,
+              t.description
+            )
+          )
+        )
+      )
+    )
+  );
 }
 
-export { useToast, toast };
+export function useToast() {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
+  return context;
+}
