@@ -73,16 +73,14 @@ export async function rewriteContent(text: string, userInput: string) {
   console.log('Calling rewrite API with:', { text, userInput });
 
   try {
-    // 添加超时控制
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     const response = await fetch('https://api.coze.com/v1/workflow/stream_run', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${import.meta.env.VITE_COZE_REWRITE_API_TOKEN}`,
         'Content-Type': 'application/json',
-        // 添加移动端 UA
         'User-Agent': navigator.userAgent,
       },
       body: JSON.stringify({
@@ -94,7 +92,6 @@ export async function rewriteContent(text: string, userInput: string) {
         }
       }),
       signal: controller.signal,
-      // 添加跨域设置
       mode: 'cors',
       credentials: 'omit'
     });
@@ -113,7 +110,6 @@ export async function rewriteContent(text: string, userInput: string) {
       throw new Error('Empty response');
     }
 
-    // 处理 SSE 格式的响应
     const events = responseText.split('\n\n').filter(Boolean);
     console.log('Parsed events:', events);
 
@@ -137,14 +133,20 @@ export async function rewriteContent(text: string, userInput: string) {
     }
 
     throw new Error('No valid content found in response');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('API error:', error);
-    if (error.name === 'AbortError') {
-      throw new Error('请求超时，请重试');
+    
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('请求超时，请重试');
+      }
+      throw error;
     }
+    
     if (!navigator.onLine) {
       throw new Error('网络连接失败，请检查网络设置');
     }
-    throw error;
+    
+    throw new Error('未知错误，请重试');
   }
 }
