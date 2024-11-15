@@ -197,46 +197,45 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
   }, []);
 
   return (
-    <div className="flex-1 overflow-auto bg-[#FFFCF5] p-6">
+    <div className="flex-1 overflow-auto bg-[#FFFCF5] px-3 py-4 md:p-6">
       {/* 顶部导航 */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-3 mb-4 md:mb-6">
         <Button
           variant="ghost"
           size="icon"
           onClick={onBack}
-          className="text-[#8B7355] hover:bg-[#FFF8E7]"
+          className="text-[#8B7355] hover:bg-[#FFF8E7] h-8 w-8 md:h-10 md:w-10"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
         </Button>
-        <h1 className="text-2xl font-semibold text-[#8B7355]">AI 文案助手</h1>
+        <h1 className="text-lg md:text-2xl font-semibold text-[#8B7355]">AI 文案助手</h1>
       </div>
 
-      {/* 流程步骤容 */}
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* 步骤 1: 文案提取 */}
+      {/* 主要内容区域 */}
+      <div className="w-full max-w-4xl mx-auto space-y-4 md:space-y-6">
+        {/* 文案提取部分 */}
         <div className="relative">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#F5D0A9] text-[#8B7355] font-bold">1</div>
-            <h2 className="text-xl font-medium text-[#8B7355]">抖音文案提取</h2>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#F5D0A9] text-[#8B7355] font-bold text-sm md:text-base">1</div>
+            <h2 className="text-base md:text-xl font-medium text-[#8B7355]">抖音文案提取</h2>
           </div>
-          
-          {/* URL 输入框 */}
-          <Card className="p-6 bg-white/50 backdrop-blur-sm border-[#E8E3D7] relative overflow-hidden">
-            <div className="flex gap-4">
+
+          <Card className="p-3 md:p-6 bg-white/50 backdrop-blur-sm border-[#E8E3D7]">
+            <div className="flex flex-col md:flex-row gap-2 md:gap-4">
               <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="请输入抖音视频链接..."
-                className="flex-1 border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
+                className="flex-1 border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9] text-sm md:text-base h-9 md:h-10"
               />
               <Button 
-                className="bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90 min-w-[100px]"
+                className="bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90 h-9 md:h-10 text-sm md:text-base w-full md:w-auto md:min-w-[100px]"
                 onClick={handleExtract}
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-3 w-3 md:h-4 md:w-4 animate-spin" />
                     <span>提取中</span>
                   </div>
                 ) : '提取文案'}
@@ -245,127 +244,118 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
           </Card>
 
           {/* 提取结果 */}
-          <Card className="mt-4 p-6 bg-white/50 backdrop-blur-sm border-[#E8E3D7] relative">
-            {/* 标题部分 */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-[#8B7355]">视频标题</h2>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-[#8B7355]"
-                  onClick={() => copyToClipboard(title)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
+          {(title || content) && (
+            <Card className="mt-3 md:mt-4 p-3 md:p-6 bg-white/50 backdrop-blur-sm border-[#E8E3D7]">
+              {/* 标题部分 */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-[#8B7355]">视频标题</h2>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-[#8B7355]"
+                    onClick={() => copyToClipboard(title)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Textarea
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="视频标题将在这里显示..."
+                  className="h-10 min-h-[40px] resize-none border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
+                />
               </div>
-              <Textarea
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="视频标题将在这里显示..."
-                className="h-10 min-h-[40px] resize-none border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
-              />
-            </div>
 
-            {/* 分隔线 */}
-            <div className="h-px bg-[#E8E3D7] mb-6" />
+              {/* 分隔线 */}
+              <div className="h-px bg-[#E8E3D7] mb-6" />
 
-            {/* 正文部分 */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-[#8B7355]">文案正文</h2>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-[#8B7355]"
-                  onClick={() => copyToClipboard(content)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
+              {/* 正文部分 */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-[#8B7355]">文案正文</h2>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-[#8B7355]"
+                    onClick={() => copyToClipboard(content)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="文案正文将在这里显示..."
+                  className="min-h-[240px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
+                />
               </div>
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="文案正文将在这里显示..."
-                className="min-h-[240px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9]"
-              />
-            </div>
 
-            {/* 加载状态遮罩 */}
-            {isLoading && (
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center rounded-[inherit]">
-                <div className="flex flex-col items-center gap-6 p-8 bg-white/80 rounded-2xl shadow-lg">
-                  <div className="relative">
-                    {/* 外层光晕效果 */}
-                    <div className="absolute -inset-4 bg-gradient-to-r from-[#F5D0A9]/40 to-[#FFE4B5]/40 rounded-full opacity-75 blur-lg animate-pulse"></div>
-                    {/* 主要加载动画 */}
+              {/* 加载状态遮罩 */}
+              {isLoading && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center rounded-[inherit]">
+                  <div className="flex flex-col items-center gap-6 p-8 bg-white/80 rounded-2xl shadow-lg">
                     <div className="relative">
-                      <div className="h-16 w-16">
-                        {/* 外圈旋转 */}
-                        <div className="absolute h-16 w-16 rounded-full border-4 border-[#F5D0A9] border-t-transparent animate-spin"></div>
-                        {/* 中圈旋转 */}
-                        <div className="absolute h-12 w-12 m-2 rounded-full border-4 border-[#8B7355] border-b-transparent animate-spin-reverse"></div>
-                        {/* 内圈旋转 */}
-                        <div className="absolute h-8 w-8 m-4 rounded-full border-4 border-[#F5D0A9] border-l-transparent animate-spin-slow"></div>
+                      {/* 外层光晕效果 */}
+                      <div className="absolute -inset-4 bg-gradient-to-r from-[#F5D0A9]/40 to-[#FFE4B5]/40 rounded-full opacity-75 blur-lg animate-pulse"></div>
+                      {/* 主要加载动画 */}
+                      <div className="relative">
+                        <div className="h-16 w-16">
+                          {/* 外圈旋转 */}
+                          <div className="absolute h-16 w-16 rounded-full border-4 border-[#F5D0A9] border-t-transparent animate-spin"></div>
+                          {/* 中圈旋转 */}
+                          <div className="absolute h-12 w-12 m-2 rounded-full border-4 border-[#8B7355] border-b-transparent animate-spin-reverse"></div>
+                          {/* 内圈旋转 */}
+                          <div className="absolute h-8 w-8 m-4 rounded-full border-4 border-[#F5D0A9] border-l-transparent animate-spin-slow"></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                    <p className="text-[#8B7355] font-medium">正在智能提取文案</p>
-                    <p className="text-[#B4A89A] text-sm animate-pulse">请稍候...</p>
+                    <div className="flex flex-col items-center gap-2">
+                      <p className="text-[#8B7355] font-medium">正在智能提取文案</p>
+                      <p className="text-[#B4A89A] text-sm animate-pulse">请稍候...</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </Card>
-
-          {/* 连接线 */}
-          <div className="absolute left-4 top-[100%] w-px h-8 bg-[#E8E3D7]" />
+              )}
+            </Card>
+          )}
         </div>
 
-        {/* 步骤 2: AI 仿写 */}
+        {/* AI 仿写部分 */}
         <div className="relative">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#F5D0A9] text-[#8B7355] font-bold">2</div>
-            <h2 className="text-xl font-medium text-[#8B7355]">AI 文案仿写</h2>
-            <div className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-[#FFF8E7] rounded-full border border-[#F5D0A9]/30">
-              <Coins className="w-4 h-4 text-[#8B7355]" />
-              <span className="text-sm text-[#8B7355]">消耗 30 积分</span>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-3 mb-3 md:mb-4">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#F5D0A9] text-[#8B7355] font-bold text-sm md:text-base">2</div>
+              <h2 className="text-base md:text-xl font-medium text-[#8B7355]">AI 文案仿写</h2>
+            </div>
+            <div className="ml-8 md:ml-auto flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1.5 bg-[#FFF8E7] rounded-full border border-[#F5D0A9]/30">
+              <Coins className="w-3 h-3 md:w-4 md:h-4 text-[#8B7355]" />
+              <span className="text-xs md:text-sm text-[#8B7355]">消耗 30 积分</span>
             </div>
           </div>
 
-          <Card className="p-6 bg-white/50 backdrop-blur-sm border-[#E8E3D7]">
-            <div className="space-y-6">
+          <Card className="p-3 md:p-6 bg-white/50 backdrop-blur-sm border-[#E8E3D7]">
+            <div className="space-y-3 md:space-y-4">
               {/* 文案来源选择 */}
-              <div className="p-4 rounded-lg border border-[#E8E3D7] bg-gradient-to-br from-white to-[#FFF8E7]">
-                <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 md:p-4 rounded-lg border border-[#E8E3D7] bg-gradient-to-br from-white to-[#FFF8E7]">
+                <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-3">
                   <Button
                     variant={useExtractedContent ? "default" : "outline"}
                     onClick={() => setUseExtractedContent(true)}
-                    className={cn(
-                      "flex-1 transition-all duration-300",
-                      useExtractedContent
-                        ? "bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90 shadow-md"
-                        : "hover:bg-[#F5D0A9]/10"
-                    )}
+                    className="flex-1 bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90 h-8 md:h-10 text-sm md:text-base"
                   >
-                    <div className="flex items-center gap-2">
-                      <ArrowLeft className="h-4 w-4" />
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <ArrowLeft className="h-3 w-3 md:h-4 md:w-4" />
                       <span>使用提取的文案</span>
                     </div>
                   </Button>
                   <Button
                     variant={!useExtractedContent ? "default" : "outline"}
                     onClick={() => setUseExtractedContent(false)}
-                    className={cn(
-                      "flex-1 transition-all duration-300",
-                      !useExtractedContent
-                        ? "bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90 shadow-md"
-                        : "hover:bg-[#F5D0A9]/10"
-                    )}
+                    className="flex-1 bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90 h-8 md:h-10 text-sm md:text-base"
                   >
-                    <div className="flex items-center gap-2">
-                      <Wand2 className="h-4 w-4" />
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <Wand2 className="h-3 w-3 md:h-4 md:w-4" />
                       <span>自定义文案</span>
                     </div>
                   </Button>
@@ -373,19 +363,16 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
 
                 {/* 文案内容展示/输入框 */}
                 {useExtractedContent ? (
-                  <div className="relative group">
+                  <div className="relative">
                     <Textarea
                       value={content}
                       readOnly
                       placeholder="请先提取文案..."
-                      className="min-h-[120px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9] transition-all duration-300 group-hover:bg-white/90"
+                      className="min-h-[100px] md:min-h-[150px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9] text-sm md:text-base"
                     />
                     {!content && (
                       <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-md">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-white/80 rounded-full shadow-sm">
-                          <ArrowUp className="h-4 w-4 text-[#8B7355] animate-bounce" />
-                          <p className="text-[#8B7355]/70">请先完成步骤 1 的文案提取</p>
-                        </div>
+                        <p className="text-xs md:text-sm text-[#8B7355]/70">请先完成步骤 1 的文案提取</p>
                       </div>
                     )}
                   </div>
@@ -394,61 +381,47 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
                     value={customContent}
                     onChange={(e) => setCustomContent(e.target.value)}
                     placeholder="请输入需要仿写的文案..."
-                    className="min-h-[120px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9] transition-all duration-300 hover:bg-white/90"
+                    className="min-h-[100px] md:min-h-[150px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9] text-sm md:text-base"
                   />
                 )}
               </div>
 
               {/* 仿写要求输入 */}
               <div className="space-y-2">
-                <Label className="text-[#8B7355] flex items-center gap-2">
-                  <Wand2 className="h-4 w-4" />
+                <Label className="text-[#8B7355] flex items-center gap-1.5 md:gap-2 text-sm md:text-base">
+                  <Wand2 className="h-3 w-3 md:h-4 md:w-4" />
                   <span>仿写要求</span>
                 </Label>
-                <div className="relative">
-                  <Textarea
-                    value={rewriteInput}
-                    onChange={(e) => setRewriteInput(e.target.value)}
-                    placeholder="请输入您的仿写需求（例如：改成卖汉服的）..."
-                    className="border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9] transition-all duration-300 hover:bg-white/90"
-                  />
-                  <div className="absolute right-2 top-2 flex items-center gap-1 px-2 py-1 bg-[#FFF8E7] rounded-full text-xs text-[#8B7355]/70">
-                    <Info className="w-3 h-3" />
-                    <span>每次生成消耗 30 积分</span>
-                  </div>
-                </div>
+                <Textarea
+                  value={rewriteInput}
+                  onChange={(e) => setRewriteInput(e.target.value)}
+                  placeholder="请输入您的仿写需求（例如：改成卖汉服的）..."
+                  className="min-h-[60px] md:min-h-[80px] border-[#E8E3D7] bg-white/80 focus:ring-[#F5D0A9] text-sm md:text-base"
+                />
               </div>
 
               {/* 生成按钮 */}
-              <div className="flex justify-center">
-                <Button 
-                  className={cn(
-                    "px-8 bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90 transition-all duration-300",
-                    "shadow-[0_0_0_0_rgba(245,208,169,0.3)] hover:shadow-[0_0_0_8px_rgba(245,208,169,0)]",
-                    "animate-pulse-shadow"
-                  )}
-                  onClick={handleRewrite}
-                  disabled={isRewriting}
-                >
-                  {isRewriting ? (
-                    <div className="flex items-center gap-2">
-                      <div className="relative w-4 h-4">
-                        <div className="absolute inset-0 rounded-full border-2 border-[#8B7355] border-l-transparent animate-spin" />
-                      </div>
-                      <span>生成中...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Wand2 className="h-4 w-4" />
-                      <span>开始仿写</span>
-                    </div>
-                  )}
-                </Button>
-              </div>
+              <Button 
+                className="w-full bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90 h-9 md:h-10 text-sm md:text-base"
+                onClick={handleRewrite}
+                disabled={isRewriting}
+              >
+                {isRewriting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-3 w-3 md:h-4 md:w-4 animate-spin" />
+                    <span>生成中...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <Wand2 className="h-3 w-3 md:h-4 md:w-4" />
+                    <span>开始仿写</span>
+                  </div>
+                )}
+              </Button>
 
               {/* 仿写结果 */}
               {(rewrittenContent || isRewriting) && (
-                <div className="mt-6 space-y-2 p-4 bg-[#FFF8E7] rounded-lg border border-[#E8E3D7]">
+                <div className="space-y-2 p-3 md:p-4 rounded-lg border border-[#E8E3D7] bg-gradient-to-br from-white to-[#FFF8E7]">
                   <div className="flex items-center justify-between">
                     <Label className="text-[#8B7355] font-medium flex items-center gap-2">
                       <Brain className="h-4 w-4" />
