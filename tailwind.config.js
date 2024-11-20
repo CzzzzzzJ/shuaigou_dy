@@ -49,6 +49,23 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      animation: {
+        'float': 'float 6s ease-in-out infinite',
+        'float-delay': 'float 8s ease-in-out infinite',
+        'float-slow': 'float 10s ease-in-out infinite',
+        'pulse-slow': 'pulse 4s ease-in-out infinite',
+        'slide': 'slide 20s linear infinite',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+        slide: {
+          '0%': { backgroundPosition: '0 0' },
+          '100%': { backgroundPosition: '100% 100%' },
+        },
+      },
     },
   },
   plugins: [],

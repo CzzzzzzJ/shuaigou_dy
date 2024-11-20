@@ -22,7 +22,7 @@ export function Header() {
             />
             <div className="hidden md:flex flex-col justify-center">
               <span className="text-lg font-semibold text-[#8B7355]">SHUAIGOU AIGC</span>
-              <span className="text-xs text-[#B4A89A]">帅狗 AIGC</span>
+              {/* <span className="text-xs text-[#B4A89A]">帅狗 AIGC</span> */}
             </div>
           </a>
         </div>
