@@ -446,17 +446,40 @@ export function DouyinTool({ onBack }: DouyinToolProps) {
                   />
                   {isRewriting && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-md">
-                      <div className="flex flex-col items-center gap-4 p-6 bg-white/90 rounded-xl shadow-lg">
+                      <div className="flex flex-col items-center gap-6 p-8 bg-white/90 rounded-xl shadow-lg">
                         <div className="relative">
-                          <div className="absolute -inset-4 bg-gradient-to-r from-[#F5D0A9]/40 to-[#FFE4B5]/40 rounded-full opacity-75 blur-lg animate-pulse" />
-                          <div className="relative w-12 h-12">
-                            <div className="absolute inset-0 rounded-full border-4 border-[#F5D0A9] border-t-transparent animate-spin" />
-                            <div className="absolute inset-2 rounded-full border-4 border-[#8B7355] border-b-transparent animate-spin-reverse" />
+                          {/* 外层光晕效果 */}
+                          <div className="absolute -inset-8 bg-gradient-to-r from-[#F5D0A9]/40 to-[#FFE4B5]/40 rounded-full opacity-75 blur-lg animate-pulse" />
+                          
+                          {/* Logo 和加载动画的组合 */}
+                          <div className="relative flex items-center justify-center">
+                            {/* 旋转光环 */}
+                            <div className="absolute w-24 h-24">
+                              <div className="absolute inset-0 rounded-full border-4 border-[#F5D0A9] border-t-transparent animate-spin" />
+                              <div className="absolute inset-2 rounded-full border-4 border-[#8B7355] border-b-transparent animate-spin-reverse" />
+                              <div className="absolute inset-4 rounded-full border-4 border-[#F5D0A9] border-l-transparent animate-spin-slow" />
+                            </div>
+                            
+                            {/* Logo */}
+                            <img 
+                              src="/logo-removebg.png"
+                              alt="Loading"
+                              className="w-16 h-16 object-contain relative z-10 animate-bounce-slow"
+                              style={{
+                                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                              }}
+                            />
                           </div>
                         </div>
-                        <div className="text-center">
+                        
+                        {/* 加载文本 */}
+                        <div className="text-center space-y-2">
                           <p className="text-[#8B7355] font-medium">AI 正在创作中</p>
-                          <p className="text-[#B4A89A] text-sm animate-pulse">请稍候...</p>
+                          <div className="flex items-center gap-1 text-[#B4A89A] text-sm">
+                            <span className="animate-pulse-dot1">·</span>
+                            <span className="animate-pulse-dot2">·</span>
+                            <span className="animate-pulse-dot3">·</span>
+                          </div>
                         </div>
                       </div>
                     </div>

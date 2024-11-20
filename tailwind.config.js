@@ -60,6 +60,11 @@ export default {
         'fade-in-down': 'fadeInDown 0.8s ease-out',
         'bounce-slow': 'bounce 2s infinite',
         'loading-bar': 'loadingBar 1.5s ease-in-out infinite',
+        'spin-slow': 'spin 3s linear infinite',
+        'spin-reverse': 'spin 2s linear infinite reverse',
+        'pulse-dot1': 'pulse 1s infinite',
+        'pulse-dot2': 'pulse 1s infinite 0.2s',
+        'pulse-dot3': 'pulse 1s infinite 0.4s',
       },
       keyframes: {
         float: {
@@ -85,6 +90,10 @@ export default {
         loadingBar: {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(100%)' },
+        },
+        bounce: {
+          '0%, 100%': { transform: 'translateY(-10%)' },
+          '50%': { transform: 'translateY(0)' },
         },
       },
     },

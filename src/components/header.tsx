@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/clerk-react';
 import { PointsDisplay } from './points-display';
+import { Link } from 'react-router-dom';
+import { User } from 'lucide-react';
 
 export function Header() {
   const { isSignedIn } = useUser();
@@ -14,15 +16,14 @@ export function Header() {
             <img 
               src="/logo-removebg.png" 
               alt="Shuaigou AIGC" 
-              className="h-12 w-auto object-contain" // 调整高度
+              className="h-12 w-auto object-contain"
               style={{
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.05))', // 添加轻微阴影
-                transform: 'translateY(-1px)' // 微调位置
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.05))',
+                transform: 'translateY(-1px)'
               }}
             />
             <div className="hidden md:flex flex-col justify-center">
               <span className="text-lg font-semibold text-[#8B7355]">SHUAIGOU AIGC</span>
-              {/* <span className="text-xs text-[#B4A89A]">帅狗 AIGC</span> */}
             </div>
           </a>
         </div>
@@ -32,6 +33,13 @@ export function Header() {
           {isSignedIn ? (
             <>
               <PointsDisplay />
+              <Link 
+                to="/profile"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-[#8B7355] hover:bg-[#FFF8E7] rounded-md transition-colors duration-200"
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden md:inline">个人中心</span>
+              </Link>
               <UserButton 
                 afterSignOutUrl="/"
                 appearance={{
