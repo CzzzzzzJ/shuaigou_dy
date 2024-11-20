@@ -1,57 +1,62 @@
-import { cn } from "@/lib/utils"
-import { Button } from "./ui/button"
-import { useNavigate } from "react-router-dom"
-import { UserButton, SignInButton, useUser } from "@clerk/clerk-react"
-import { Loader2 } from "lucide-react"
+import { Button } from '@/components/ui/button';
+import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/clerk-react';
 import { PointsDisplay } from './points-display';
 
-interface HeaderProps {
-  className?: string
-}
-
-export function Header({ className }: HeaderProps) {
-  const navigate = useNavigate()
-  const { isSignedIn, isLoaded } = useUser()
+export function Header() {
+  const { isSignedIn } = useUser();
 
   return (
-    <header className={cn("flex h-16 items-center justify-between border-b px-6", className)}>
-      <div 
-        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" 
-        onClick={() => navigate('/')}
-      >
-        <div className="h-8 w-8 rounded-lg bg-[#F5D0A9] flex items-center justify-center">
-          <span className="text-[#8B7355] font-bold">AI</span>
+    <header className="sticky top-0 z-50 w-full border-b border-[#E8E3D7] bg-white/50 backdrop-blur-sm">
+      <div className="container flex h-16 items-center justify-between">
+        {/* Logo 部分 */}
+        <div className="flex items-center">
+          <a href="/" className="flex items-center gap-2 transition-opacity hover:opacity-90">
+            <img 
+              src="/logo-removebg.png" 
+              alt="Shuaigou AIGC" 
+              className="h-12 w-auto object-contain" // 调整高度
+              style={{
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.05))', // 添加轻微阴影
+                transform: 'translateY(-1px)' // 微调位置
+              }}
+            />
+            <div className="hidden md:flex flex-col justify-center">
+              <span className="text-lg font-semibold text-[#8B7355]">SHUAIGOU AIGC</span>
+              <span className="text-xs text-[#B4A89A]">帅狗 AIGC</span>
+            </div>
+          </a>
         </div>
-        <span className="text-lg font-medium text-[#8B7355]">帅狗AIGC</span>
-      </div>
 
-      <div className="flex items-center gap-4">
-        {!isLoaded ? (
-          // 加载状态显示骨架屏
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-9 bg-gray-200 animate-pulse rounded-md"></div>
-            <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
-          </div>
-        ) : isSignedIn ? (
-          <>
-            <PointsDisplay />
-            <Button 
-              variant="ghost" 
-              className="text-[#8B7355]"
-              onClick={() => navigate('/profile')}
-            >
-              个人中心
-            </Button>
-            <UserButton afterSignOutUrl="/" />
-          </>
-        ) : (
-          <SignInButton mode="modal">
-            <Button className="bg-[#F5D0A9] text-[#8B7355]">
-              登录
-            </Button>
-          </SignInButton>
-        )}
+        {/* 右侧操作区 */}
+        <div className="flex items-center gap-4">
+          {isSignedIn ? (
+            <>
+              <PointsDisplay />
+              <UserButton 
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8 rounded-full border-2 border-[#F5D0A9]"
+                  }
+                }} 
+              />
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <SignInButton mode="modal">
+                <Button variant="ghost" className="text-[#8B7355] hover:bg-[#FFF8E7]">
+                  登录
+                </Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button className="bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90">
+                  注册
+                </Button>
+              </SignUpButton>
+            </div>
+          )}
+        </div>
       </div>
     </header>
-  )
+  );
 }

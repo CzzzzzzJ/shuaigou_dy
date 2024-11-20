@@ -3,12 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Upload, Wand2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { DouyinTool } from './tools/douyin-tool';
+import { XiaohongshuTool } from './tools/xiaohongshu-tool';
 
 export function MainContent() {
   const [activeToolId, setActiveToolId] = useState<string | null>(null);
 
   if (activeToolId === 'douyin-extractor') {
     return <DouyinTool onBack={() => setActiveToolId(null)} />;
+  }
+
+  if (activeToolId === 'xiaohongshu-generator') {
+    return <XiaohongshuTool onBack={() => setActiveToolId(null)} />;
   }
 
   return (
@@ -56,10 +61,10 @@ export function MainContent() {
                   <div className="p-2 bg-[#FFF8E7] rounded-lg">
                     <Upload className="h-6 w-6 text-[#8B7355]" />
                   </div>
-                  <h2 className="text-lg font-medium text-[#8B7355]">文案提取</h2>
+                  <h2 className="text-lg font-medium text-[#8B7355]">抖音文案提取 & AI仿写</h2>
                 </div>
                 <p className="text-[#B4A89A] mb-6">
-                  从抖音视频链接中一键提取文案内容，支持批量处理，让创作更轻松
+                  从抖音视频链接中一键提取文案内容，支持批量处理，让创作更轻松。支持AI仿写，让创作更高效。
                 </p>
                 <Button 
                   className="w-full bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90"
@@ -79,12 +84,15 @@ export function MainContent() {
                   <div className="p-2 bg-[#FFF8E7] rounded-lg">
                     <Wand2 className="h-6 w-6 text-[#8B7355]" />
                   </div>
-                  <h2 className="text-lg font-medium text-[#8B7355]">AIGC 文案生成</h2>
+                  <h2 className="text-lg font-medium text-[#8B7355]">种草笔记生成器 & 小红书文案生成</h2>
                 </div>
                 <p className="text-[#B4A89A] mb-6">
-                  基于AI模型，智能生成与原文案相似的创意内容，激发创作灵感
+                  上传图片，生成种草笔记，让创作更简单。
                 </p>
-                <Button className="w-full bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90">
+                <Button 
+                  className="w-full bg-[#F5D0A9] text-[#8B7355] hover:bg-[#F5D0A9]/90"
+                  onClick={() => setActiveToolId('xiaohongshu-generator')}
+                >
                   开始生成
                 </Button>
               </div>
